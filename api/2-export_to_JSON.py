@@ -1,47 +1,56 @@
 #!/usr/bin/python3
-""" dictionaries of dictionaries """
+"""
+    python script that exports data in the JSON format
+"""
 import json
 import requests
-import sys
+from sys import argv
 
+if __name__ == "__main__":
+    """
+        request user info by employee ID
+    """
+    request_employee = requests.get(
+        'https://jsonplaceholder.typicode.com/users/{}/'.format(argv[1]))
+    """
+        convert json to dictionary
+    """
+    user = json.loads(request_employee.text)
+    """
+        extract username
+    """
+    username = user.get("username")
 
-def verif(request):
-    """ check for request status """
-    print(request)
-    print(request.status_code)
-    print(request.headers)
-    print(request.text)
-    print(request.json())
+    """
+        request user's TODO list
+    """
+    request_todos = requests.get(
+        'https://jsonplaceholder.typicode.com/users/{}/todos'.format(argv[1]))
+    """
+        dictionary to store task status(completed) in boolean format
+    """
+    tasks = {}
+    """
+        convert json to list of dictionaries
+    """
+    user_todos = json.loads(request_todos.text)
+    """
+        loop through dictionary & get completed tasks
+    """
+    for dictionary in user_todos:
+        tasks.update({dictionary.get("title"): dictionary.get("completed")})
 
+    task_list = []
+    for k, v in tasks.items():
+        task_list.append({
+            "task": k,
+            "completed": v,
+            "username": username
+        })
 
-def outPutJson(Users, Tasks):
-    """ Print in terminal output thingy """
-    # Output Preparation
-    dictJson = dict()
-    dictInside = dict()
-    listOfDict = []
-    for user in Users:
-        listOfDict = []
-        for task in Tasks:
-            dictInside = dict()
-            if task["userId"] == user["id"]:
-                dictInside["username"] = user["username"]
-                dictInside["task"] = task["title"]
-                dictInside["completed"] = task["completed"]
-                listOfDict.append(dictInside)
-        dictJson[user["id"]] = listOfDict
-
-    with open("todo_all_employees.json", mode='w') as f:
-        f.write(json.dumps(dictJson))
-
-
-userLink = "https://jsonplaceholder.typicode.com/users/"
-requestPerson = requests.get(userLink)
-
-todoLink = "https://jsonplaceholder.typicode.com/todos/"
-requestTodoList = requests.get(todoLink)
-
-searchedUser = requestPerson.json()
-listTodoUser = requestTodoList.json()
-
-outPutJson(searchedUser, listTodoUser)
+    json_to_dump = {argv[1]: task_list}
+    """
+        export to JSON
+    """
+    with open('{}.json'.format(argv[1]), mode='w') as file:
+        json.dump(json_to_dump, file)
